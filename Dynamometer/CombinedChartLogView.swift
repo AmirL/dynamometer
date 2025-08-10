@@ -13,11 +13,17 @@ struct CombinedChartLogView: View {
   @Environment(\.horizontalSizeClass) private var hSize
   @Environment(\.verticalSizeClass) private var vSize
 
+  @State private var showGuidanceHelp: Bool = false
+
   var body: some View {
     NavigationStack {
       Form {
         Section {
           ChartView(chartHeight: chartHeight)
+        }
+
+        if let today = todayReading, let set = settings.first {
+          GuidanceSummarySection(value: today.value, settings: set)
         }
 
         Section(header: Text("Add value")) {
@@ -102,6 +108,11 @@ struct CombinedChartLogView: View {
     }
   }
 
+  private var todayReading: Reading? {
+    let cal = Calendar.current
+    return readings.first(where: { cal.isDateInToday($0.date) })
+  }
+
   private var keyboardToolbar: some ToolbarContent {
     ToolbarItemGroup(placement: .keyboard) {
       Spacer()
@@ -131,20 +142,10 @@ private struct CombinedLogRow: View {
           .foregroundStyle(.secondary)
       }
       Spacer()
-      let category = classify(reading.value, with: settings)
-      Text(category.label)
-        .font(.caption).bold()
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(category.color.opacity(0.15))
-        .foregroundStyle(category.color)
-        .clipShape(Capsule())
+      let tag = listTag(for: reading.value, with: settings)
+      Pill(label: tag.label, color: tag.color)
     }
   }
-
-  private func classify(_ value: Double, with settings: AppSettings) -> (label: String, color: Color) {
-    if value < settings.baselineMin { return ("Below", .red) }
-    if value > settings.baselineMax { return ("Above", .green) }
-    return ("Baseline", .gray)
-  }
 }
+
+ 
