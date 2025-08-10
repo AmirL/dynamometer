@@ -26,6 +26,10 @@ struct DashboardView: View {
           GuidanceSummarySection(value: today.value, settings: set)
         }
 
+        if let set = settings.first, let trend = latestTrendValue(for: set) {
+          TrendGuidanceSection(trendValue: trend, settings: set)
+        }
+
         Section(header: Text("Add value")) {
           TextField("Grip strength (kg)", text: $valueText)
             .keyboardType(.decimalPad)
@@ -33,7 +37,7 @@ struct DashboardView: View {
             .submitLabel(.done)
           DatePicker("Date", selection: $date, displayedComponents: [.date])
           Button(action: saveReading) {
-            Label("Save Reading", systemImage: "tray.and.arrow.down")
+            Label("Add", systemImage: "tray.and.arrow.down")
           }
           .buttonStyle(.borderedProminent)
           .tint(Theme.tint)
@@ -111,6 +115,12 @@ struct DashboardView: View {
   private var todayReading: Reading? {
     let cal = Calendar.current
     return readings.first(where: { cal.isDateInToday($0.date) })
+  }
+
+  private func latestTrendValue(for settings: AppSettings) -> Double? {
+    // Use the full dataset to ensure we have enough points for SMA
+    let data = readings.filteredByPeriod("All", scale: settings.chartScale, smaWindow: settings.smaWindow)
+    return data.compactMap(\.smaValue).last
   }
 
   private var keyboardToolbar: some ToolbarContent {

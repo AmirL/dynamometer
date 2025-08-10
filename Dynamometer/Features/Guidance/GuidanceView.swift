@@ -20,14 +20,17 @@ struct GuidanceSummarySection: View {
       }
     }
     .sheet(isPresented: $showGuidanceHelp) {
-      GuidanceInfoView(settings: settings)
+      GuidanceInfoView(settings: settings, mode: .training)
     }
   }
 }
 
 // Help popup describing how guidance thresholds work, with numbers.
+enum GuidanceInfoMode { case training, trend }
+
 struct GuidanceInfoView: View {
   let settings: AppSettings
+  var mode: GuidanceInfoMode = .training
 
   var body: some View {
     NavigationStack {
@@ -38,7 +41,7 @@ struct GuidanceInfoView: View {
           ruleRow(title: "> \(fmt(settings.baselineMax))", category: .above)
         }
       }
-      .navigationTitle("Guidance Help")
+      .navigationTitle(mode == .training ? "Guidance Help" : "Trend Guidance Help")
       .navigationBarTitleDisplayMode(.inline)
     }
   }
@@ -47,9 +50,35 @@ struct GuidanceInfoView: View {
     HStack {
       Text(title)
       Spacer()
-      Pill(label: category.guidanceLabel, color: category.guidanceColor)
+      let label = (mode == .training) ? category.guidanceLabel : category.trendGuidanceLabel
+      Pill(label: label, color: category.guidanceColor)
     }
   }
 
   private func fmt(_ value: Double) -> String { String(format: "%.1f", value) }
+}
+
+// Trend summary row using the latest SMA value.
+struct TrendGuidanceSection: View {
+  let trendValue: Double
+  let settings: AppSettings
+  @State private var showTrendHelp = false
+
+  var body: some View {
+    Section {
+      let guide = trendGuidance(for: trendValue, with: settings)
+      HStack {
+        Text("Trend Guidance")
+        Button(action: { showTrendHelp = true }) {
+          Image(systemName: "questionmark.circle").imageScale(.medium)
+        }
+        .buttonStyle(.plain)
+        Spacer()
+        Pill(label: guide.label, color: guide.color)
+      }
+    }
+    .sheet(isPresented: $showTrendHelp) {
+      GuidanceInfoView(settings: settings, mode: .trend)
+    }
+  }
 }

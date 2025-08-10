@@ -37,6 +37,15 @@ enum GuidanceCategory {
     case .above: return .green
     }
   }
+
+  // Trend-specific short labels for the pill.
+  var trendGuidanceLabel: String {
+    switch self {
+    case .below: return "Take deload"
+    case .within: return "Train Normally"
+    case .above: return "Fully recovered"
+    }
+  }
 }
 
 // Core classification using the baseline corridor.
@@ -55,4 +64,9 @@ func listTag(for value: Double, with settings: AppSettings) -> (label: String, c
 func trainingGuidance(for value: Double, with settings: AppSettings) -> (label: String, color: Color) {
   let cat = classify(value, with: settings)
   return (cat.guidanceLabel, cat.guidanceColor)
+}
+
+func trendGuidance(for value: Double, with settings: AppSettings) -> (label: String, color: Color) {
+  let cat = classify(value, with: settings)
+  return (cat.trendGuidanceLabel, cat.guidanceColor)
 }
