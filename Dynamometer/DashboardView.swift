@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-struct CombinedChartLogView: View {
+struct DashboardView: View {
   @Environment(\.modelContext) private var modelContext
   @State private var readings: [Reading] = []
   @State private var settings: [AppSettings] = []
@@ -43,7 +43,7 @@ struct CombinedChartLogView: View {
         if !readings.isEmpty, let set = settings.first {
           Section(header: Text("Recent")) {
             ForEach(readings.prefix(10)) { r in
-              CombinedLogRow(reading: r, settings: set)
+              ReadingRow(reading: r, settings: set)
             }
             .onDelete(perform: delete)
           }
@@ -127,7 +127,7 @@ struct CombinedChartLogView: View {
   }
 }
 
-private struct CombinedLogRow: View {
+private struct ReadingRow: View {
   let reading: Reading
   let settings: AppSettings
 

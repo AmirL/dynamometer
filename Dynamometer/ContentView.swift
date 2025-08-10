@@ -17,7 +17,7 @@ struct ContentView: View {
         ZStack {
             Theme.backgroundGradient.ignoresSafeArea()
             TabView {
-                CombinedChartLogView()
+                DashboardView()
                     .tabItem { Label("Chart", systemImage: "chart.xyaxis.line") }
 
                 SettingsView()
