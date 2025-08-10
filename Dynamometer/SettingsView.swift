@@ -7,7 +7,9 @@ struct SettingsView: View {
     @Query private var settings: [AppSettings]
     @Query(sort: \Reading.date, order: .reverse) private var readings: [Reading]
     @State private var showImporter = false
+    @State private var showExporter = false
     @State private var importResultMessage: String?
+    @State private var exportResultMessage: String?
     @State private var baselineMinText: String = ""
     @State private var baselineMaxText: String = ""
     @FocusState private var focusedField: Field?
@@ -78,6 +80,27 @@ struct SettingsView: View {
                                 importResultMessage = "Import failed: \(err.localizedDescription)"
                             }
                         }
+
+                        Button {
+                            showExporter = true
+                        } label: {
+                            Label("Export CSV", systemImage: "square.and.arrow.up")
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(Theme.tint)
+                        .fileExporter(
+                            isPresented: $showExporter,
+                            document: CSVDocument(text: CSVExport.makeCSV(from: readings)),
+                            contentType: .commaSeparatedText,
+                            defaultFilename: "DynamometerReadings"
+                        ) { result in
+                            switch result {
+                            case .success:
+                                exportResultMessage = "Exported CSV"
+                            case .failure(let err):
+                                exportResultMessage = "Export failed: \(err.localizedDescription)"
+                            }
+                        }
                     }
                     if let last = readings.first {
                         Section("Last Reading") {
@@ -105,6 +128,11 @@ struct SettingsView: View {
                 Button("OK", role: .cancel) { importResultMessage = nil }
             } message: {
                 Text(importResultMessage ?? "")
+            }
+            .alert("Export", isPresented: Binding(get: { exportResultMessage != nil }, set: { if !$0 { exportResultMessage = nil } })) {
+                Button("OK", role: .cancel) { exportResultMessage = nil }
+            } message: {
+                Text(exportResultMessage ?? "")
             }
         }
     }
