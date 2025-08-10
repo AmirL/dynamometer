@@ -23,18 +23,20 @@ enum GuidanceCategory {
   }
 
   var listColor: Color {
+    // Use the same shared colors as guidance labels
     switch self {
-    case .below: return .red
-    case .within: return .gray
-    case .above: return .green
+    case .below: return Theme.guidanceBelow
+    case .within: return Theme.guidanceWithin
+    case .above: return Theme.guidanceAbove
     }
   }
 
   var guidanceColor: Color {
+    // Centralized color mapping
     switch self {
-    case .below: return .orange
-    case .within: return .blue
-    case .above: return .green
+    case .below: return Theme.guidanceBelow
+    case .within: return Theme.guidanceWithin
+    case .above: return Theme.guidanceAbove
     }
   }
 
@@ -58,7 +60,8 @@ func classify(_ value: Double, with settings: AppSettings) -> GuidanceCategory {
 // Mapping helpers to keep labels/colors in one place.
 func listTag(for value: Double, with settings: AppSettings) -> (label: String, color: Color) {
   let cat = classify(value, with: settings)
-  return (cat.listLabel, cat.listColor)
+  // Keep list labels, but use the same colors as guidance
+  return (cat.listLabel, cat.guidanceColor)
 }
 
 func trainingGuidance(for value: Double, with settings: AppSettings) -> (label: String, color: Color) {

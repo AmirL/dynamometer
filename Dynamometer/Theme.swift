@@ -3,6 +3,11 @@ import SwiftUI
 enum Theme {
   static let tint: Color = .indigo
 
+  // Shared guidance colors used across the app
+  static let guidanceBelow: Color = .orange
+  static let guidanceWithin: Color = .blue
+  static let guidanceAbove: Color = .green
+
   static let lineGradient: LinearGradient = .linearGradient(
     colors: [.indigo, .blue],
     startPoint: .leading,
@@ -37,4 +42,3 @@ private struct CardModifier: ViewModifier {
 extension View {
   func cardStyle() -> some View { modifier(CardModifier()) }
 }
-

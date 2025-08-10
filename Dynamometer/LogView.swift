@@ -47,11 +47,7 @@ struct LogView: View {
         try? modelContext.save()
     }
 
-    private func classify(_ value: Double, with settings: AppSettings) -> (label: String, color: Color) {
-        if value < settings.baselineMin { return ("Below", .red) }
-        if value > settings.baselineMax { return ("Above", .green) }
-        return ("Baseline", .gray)
-    }
+    // Colors and labels for recent entries now come from shared GuidanceLogic
     
     // MARK: - Sections
 
@@ -115,20 +111,8 @@ private struct LogRow: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            let category = classify(reading.value, with: settings)
-            Text(category.label)
-                .font(.caption).bold()
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(category.color.opacity(0.15))
-                .foregroundStyle(category.color)
-                .clipShape(Capsule())
+            let tag = listTag(for: reading.value, with: settings)
+            Pill(label: tag.label, color: tag.color)
         }
-    }
-
-    private func classify(_ value: Double, with settings: AppSettings) -> (label: String, color: Color) {
-        if value < settings.baselineMin { return ("Below", .red) }
-        if value > settings.baselineMax { return ("Above", .green) }
-        return ("Baseline", .gray)
     }
 }
