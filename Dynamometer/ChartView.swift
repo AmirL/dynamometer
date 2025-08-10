@@ -7,37 +7,32 @@ struct ChartView: View {
     @Query private var settings: [AppSettings]
     @State private var scrollPosition: Date = .now
     @State private var hasInitialized = false
+    var chartHeight: CGFloat? = nil
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 16) {
-                Group {
-                    if readings.isEmpty {
-                        ContentUnavailableView("No Data", systemImage: "chart.xyaxis.line", description: Text("Add readings to see trends."))
-                    } else if let set = settings.first {
-                        chart(readings: readings, settings: set)
-                            .cardStyle()
-                    } else {
-                        ContentUnavailableView("Configure Baseline", systemImage: "slider.horizontal.3", description: Text("Set baseline range in Settings."))
-                    }
-                }
-                .navigationTitle("Trend")
-                .padding(.horizontal)
-
-                if let set = settings.first, !readings.isEmpty {
-                    VStack(spacing: 12) {
-                        periodSegmented(settings: set)
-                        scaleSegmented(settings: set)
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom)
+        VStack(spacing: 16) {
+            Group {
+                if readings.isEmpty {
+                    ContentUnavailableView("No Data", systemImage: "chart.xyaxis.line", description: Text("Add readings to see trends."))
+                } else if let set = settings.first {
+                    chart(readings: readings, settings: set, height: chartHeight)
+                        .cardStyle()
+                } else {
+                    ContentUnavailableView("Configure Baseline", systemImage: "slider.horizontal.3", description: Text("Set baseline range in Settings."))
                 }
             }
-            .background(Theme.backgroundGradient.ignoresSafeArea())
+
+            if let set = settings.first, !readings.isEmpty {
+                VStack(spacing: 12) {
+                    periodSegmented(settings: set)
+                    scaleSegmented(settings: set)
+                }
+                .padding(.bottom)
+            }
         }
     }
 
-    private func chart(readings: [Reading], settings: AppSettings) -> some View {
+    private func chart(readings: [Reading], settings: AppSettings, height: CGFloat?) -> some View {
         let allChartData = readings.filteredByPeriod("All", scale: settings.chartScale, smaWindow: settings.smaWindow)
         let minDate = allChartData.first?.date ?? .now
         let maxDate = allChartData.last?.date ?? .now
@@ -123,7 +118,7 @@ struct ChartView: View {
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 6))
         }
-        .frame(minHeight: 220)
+        .frame(height: height ?? 220)
     }
 
     private func color(for value: Double, settings: AppSettings) -> Color {
