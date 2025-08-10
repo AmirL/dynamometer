@@ -24,11 +24,28 @@ final class DynamometerUITests: XCTestCase {
 
     @MainActor
     func testExample() throws {
-        // UI tests must launch the application that they test.
         let app = XCUIApplication()
+        app.launchArguments += ["UI_TESTS_SEED_DATA", "UI_TESTS_IN_MEMORY"]
         app.launch()
-
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        
+        app.tabBars.buttons["Chart"].tap()
+        
+        // Wait for the chart view to load - either the chart or a content unavailable view
+        let chartExists = app.otherElements["chart_container"].waitForExistence(timeout: 3)
+        let noDataExists = app.staticTexts["No Data"].waitForExistence(timeout: 1)
+        let configureBaselineExists = app.staticTexts["Configure Baseline"].waitForExistence(timeout: 1)
+        
+        if !chartExists && (noDataExists || configureBaselineExists) {
+            XCTFail("Chart not available - either no data seeded or no settings configured")
+        }
+        
+        // If chart exists, test the period selection
+        if chartExists {
+            let allButton = app.buttons["period_all"]
+            XCTAssertTrue(allButton.waitForExistence(timeout: 2))
+            allButton.tap()
+            XCTAssertTrue(app.otherElements["chart_container"].waitForExistence(timeout: 2))
+        }
     }
 
     @MainActor

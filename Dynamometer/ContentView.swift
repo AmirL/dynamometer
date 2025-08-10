@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  Dynamometer
 //
-//  Created by Amir on 09.08.2025.
+//  Updated for logging and charting dynamometer readings.
 //
 
 import SwiftUI
@@ -10,52 +10,53 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Query private var settings: [AppSettings]
+    @Query private var readings: [Reading]
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-        } detail: {
-            Text("Select an item")
+        TabView {
+            LogView()
+                .tabItem { Label("Log", systemImage: "plus.circle") }
+
+            ChartView()
+                .tabItem { Label("Chart", systemImage: "chart.xyaxis.line") }
+
+            SettingsView()
+                .tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
+        }
+        .onAppear {
+            ensureSettings()
+            seedUITestDataIfNeeded()
         }
     }
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+    private func ensureSettings() {
+        if settings.isEmpty {
+            modelContext.insert(AppSettings())
+            try? modelContext.save()
         }
     }
 
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+    private func seedUITestDataIfNeeded() {
+        guard CommandLine.arguments.contains("UI_TESTS_SEED_DATA") else { return }
+        guard readings.isEmpty else { return }
+
+        let cal = Calendar.current
+        let start = cal.date(byAdding: .day, value: -100, to: Date()) ?? Date()
+        for i in 0..<100 {
+            if let d = cal.date(byAdding: .day, value: i, to: start) {
+                let base: Double = 45
+                let seasonal = sin(Double(i) / 30.0) * 5.0
+                let noise = Double((i * 31) % 7) - 3.0
+                let value = base + seasonal + noise
+                modelContext.insert(Reading(date: d, value: value))
             }
         }
+        try? modelContext.save()
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: [Reading.self, AppSettings.self], inMemory: true)
 }

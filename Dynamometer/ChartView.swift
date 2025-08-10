@@ -10,7 +10,7 @@ struct ChartView: View {
 
     var body: some View {
         NavigationStack {
-            VStack {
+            VStack(spacing: 8) {
                 Group {
                     if readings.isEmpty {
                         ContentUnavailableView("No Data", systemImage: "chart.xyaxis.line", description: Text("Add readings to see trends."))
@@ -22,9 +22,13 @@ struct ChartView: View {
                 }
                 .navigationTitle("Trend")
                 .padding()
-                
+
                 if let set = settings.first, !readings.isEmpty {
-                    periodSelector(settings: set)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        periodSelector(settings: set)
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom)
                 }
             }
         }
@@ -35,7 +39,8 @@ struct ChartView: View {
         let minDate = allChartData.first?.date ?? .now
         let maxDate = allChartData.last?.date ?? .now
         
-        return Chart {
+        return ZStack {
+            Chart {
             // Baseline corridor band
             RectangleMark(
                 xStart: .value("Start", minDate),
@@ -72,12 +77,14 @@ struct ChartView: View {
                     .foregroundStyle(.blue)
                 }
             }
+            }
         }
+        .accessibilityIdentifier("chart_container")
         .chartXScale(domain: scrollDomain(minDate: minDate, maxDate: maxDate, period: settings.chartPeriod))
         .chartYScale(domain: domainY(chartData: allChartData, settings: settings))
         .chartScrollableAxes(.horizontal)
         .chartScrollPosition(x: $scrollPosition)
-        .chartXVisibleDomain(length: visibleWidth(for: settings.chartPeriod, minDate: minDate, maxDate: maxDate))
+        .chartXVisibleDomain(length: ChartScaling.visibleWidth(period: settings.chartPeriod, minDate: minDate, maxDate: maxDate))
         .onAppear {
             // Ensure we start scrolled to the most recent data (right side)
             if let last = allChartData.last?.date {
@@ -108,7 +115,7 @@ struct ChartView: View {
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 6))
         }
-        .frame(minHeight: 280)
+        .frame(minHeight: 220)
     }
 
     private func color(for value: Double, settings: AppSettings) -> Color {
@@ -160,52 +167,11 @@ struct ChartView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.bottom)
     }
     
     
     private func scrollDomain(minDate: Date, maxDate: Date, period: String) -> ClosedRange<Date> {
-        if period == "All" {
-            return paddedRange(minDate: minDate, maxDate: maxDate, percent: 0.02)
-        }
-        if hasInitialized {
-            return minDate...maxDate
-        }
-        // For initial load, create a domain that positions recent data on the right
-        let width = visibleWidth(for: period, minDate: minDate, maxDate: maxDate)
-        let start = maxDate.addingTimeInterval(-width)
-        return Swift.max(start, minDate)...maxDate
-    }
-    
-    private func visibleWidth(for period: String, minDate: Date, maxDate: Date) -> TimeInterval {
-        let calendar = Calendar.current
-        switch period {
-        case "1W":
-            return calendar.date(byAdding: .weekOfYear, value: 1, to: maxDate)!.timeIntervalSince(maxDate)
-        case "1M":
-            return calendar.date(byAdding: .month, value: 1, to: maxDate)!.timeIntervalSince(maxDate)
-        case "3M":
-            return calendar.date(byAdding: .month, value: 3, to: maxDate)!.timeIntervalSince(maxDate)
-        case "6M":
-            return calendar.date(byAdding: .month, value: 6, to: maxDate)!.timeIntervalSince(maxDate)
-        case "1Y":
-            return calendar.date(byAdding: .year, value: 1, to: maxDate)!.timeIntervalSince(maxDate)
-        case "All":
-            // Use the real data span with symmetric padding matching scrollDomain
-            let span = maxDate.timeIntervalSince(minDate)
-            let padPercent = 0.02
-            return span * (1 + 2 * padPercent)
-        default:
-            return calendar.date(byAdding: .month, value: 3, to: maxDate)!.timeIntervalSince(maxDate)
-        }
-    }
-
-    private func paddedRange(minDate: Date, maxDate: Date, percent: Double) -> ClosedRange<Date> {
-        let span = max(maxDate.timeIntervalSince(minDate), 1) // avoid zero span
-        let pad = span * max(percent, 0)
-        let start = minDate.addingTimeInterval(-pad)
-        let end = maxDate.addingTimeInterval(pad)
-        return start...end
+        ChartScaling.scrollDomain(minDate: minDate, maxDate: maxDate, period: period, hasInitialized: hasInitialized)
     }
 }
 
@@ -218,6 +184,7 @@ struct PeriodButton: View {
         Button(title) {
             settings.chartPeriod = title
         }
+        .accessibilityIdentifier("period_\(title.lowercased())")
         .font(.system(size: 14, weight: .medium))
         .foregroundColor(isSelected ? .white : .primary)
         .padding(.horizontal, 12)
@@ -237,3 +204,5 @@ extension View {
         }
     }
 }
+
+ 
