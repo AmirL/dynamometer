@@ -10,27 +10,30 @@ struct ChartView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 8) {
+            VStack(spacing: 16) {
                 Group {
                     if readings.isEmpty {
                         ContentUnavailableView("No Data", systemImage: "chart.xyaxis.line", description: Text("Add readings to see trends."))
                     } else if let set = settings.first {
                         chart(readings: readings, settings: set)
+                            .cardStyle()
                     } else {
                         ContentUnavailableView("Configure Baseline", systemImage: "slider.horizontal.3", description: Text("Set baseline range in Settings."))
                     }
                 }
                 .navigationTitle("Trend")
-                .padding()
+                .padding(.horizontal)
 
                 if let set = settings.first, !readings.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        periodSelector(settings: set)
+                    VStack(spacing: 12) {
+                        periodSegmented(settings: set)
+                        scaleSegmented(settings: set)
                     }
                     .padding(.horizontal)
                     .padding(.bottom)
                 }
             }
+            .background(Theme.backgroundGradient.ignoresSafeArea())
         }
     }
 
@@ -48,13 +51,13 @@ struct ChartView: View {
                 yStart: .value("Min", settings.baselineMin),
                 yEnd: .value("Max", settings.baselineMax)
             )
-            .foregroundStyle(.gray.opacity(0.12))
+            .foregroundStyle(.gray.opacity(0.10))
 
             // Boundary lines
             RuleMark(y: .value("Min", settings.baselineMin))
-                .foregroundStyle(.gray.opacity(0.5))
+                .foregroundStyle(.secondary)
             RuleMark(y: .value("Max", settings.baselineMax))
-                .foregroundStyle(.gray.opacity(0.5))
+                .foregroundStyle(.secondary)
 
             // Transparent raw data points
             ForEach(Array(allChartData.enumerated()), id: \.offset) { _, point in
@@ -62,8 +65,8 @@ struct ChartView: View {
                     x: .value("Date", point.date),
                     y: .value("Value", point.value)
                 )
-                .symbolSize(30)
-                .foregroundStyle(.blue.opacity(0.3))
+                .symbolSize(28)
+                .foregroundStyle(.primary.opacity(0.25))
             }
             
             // Thick SMA line
@@ -73,8 +76,9 @@ struct ChartView: View {
                         x: .value("Date", point.date),
                         y: .value("SMA", smaValue)
                     )
+                    .interpolationMethod(.catmullRom)
                     .lineStyle(StrokeStyle(lineWidth: 4))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Theme.lineGradient)
                 }
             }
             }
@@ -82,6 +86,10 @@ struct ChartView: View {
         .accessibilityIdentifier("chart_container")
         .chartXScale(domain: scrollDomain(minDate: minDate, maxDate: maxDate, period: settings.chartPeriod))
         .chartYScale(domain: domainY(chartData: allChartData, settings: settings))
+        .chartPlotStyle { area in
+            area.background(.thinMaterial)
+                .cornerRadius(12)
+        }
         .chartScrollableAxes(.horizontal)
         .chartScrollPosition(x: $scrollPosition)
         .chartXVisibleDomain(length: ChartScaling.visibleWidth(period: settings.chartPeriod, minDate: minDate, maxDate: maxDate))
@@ -134,39 +142,34 @@ struct ChartView: View {
         return minV...maxV
     }
     
-    private func periodSelector(settings: AppSettings) -> some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 8) {
-                PeriodButton(title: "1W", isSelected: settings.chartPeriod == "1W", settings: settings)
-                PeriodButton(title: "1M", isSelected: settings.chartPeriod == "1M", settings: settings)
-                PeriodButton(title: "3M", isSelected: settings.chartPeriod == "3M", settings: settings)
-                PeriodButton(title: "6M", isSelected: settings.chartPeriod == "6M", settings: settings)
-                PeriodButton(title: "1Y", isSelected: settings.chartPeriod == "1Y", settings: settings)
-                PeriodButton(title: "All", isSelected: settings.chartPeriod == "All", settings: settings)
-                
-                Menu {
-                    Button(settings.chartScale == "D" ? "Daily ✓" : "Daily") {
-                        settings.chartScale = "D"
-                    }
-                    Button(settings.chartScale == "W" ? "Weekly ✓" : "Weekly") {
-                        settings.chartScale = "W"
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(settings.chartScale)
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 10))
-                    }
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.primary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color(.systemGray5))
-                    .clipShape(Capsule())
-                }
-            }
+    private func periodSegmented(settings: AppSettings) -> some View {
+        Picker("Period", selection: Binding(
+            get: { settings.chartPeriod },
+            set: { settings.chartPeriod = $0 }
+        )) {
+            Text("1W").tag("1W")
+            Text("1M").tag("1M")
+            Text("3M").tag("3M")
+            Text("6M").tag("6M")
+            Text("1Y").tag("1Y")
+            Text("All").tag("All")
         }
-        .padding(.horizontal, 16)
+        .pickerStyle(.segmented)
+        .tint(Theme.tint)
+        .accessibilityIdentifier("period_segmented")
+    }
+
+    private func scaleSegmented(settings: AppSettings) -> some View {
+        Picker("Scale", selection: Binding(
+            get: { settings.chartScale },
+            set: { settings.chartScale = $0 }
+        )) {
+            Text("Daily").tag("D")
+            Text("Weekly").tag("W")
+        }
+        .pickerStyle(.segmented)
+        .tint(Theme.tint)
+        .accessibilityIdentifier("scale_segmented")
     }
     
     
@@ -175,34 +178,6 @@ struct ChartView: View {
     }
 }
 
-struct PeriodButton: View {
-    let title: String
-    let isSelected: Bool
-    let settings: AppSettings
-    
-    var body: some View {
-        Button(title) {
-            settings.chartPeriod = title
-        }
-        .accessibilityIdentifier("period_\(title.lowercased())")
-        .font(.system(size: 14, weight: .medium))
-        .foregroundColor(isSelected ? .white : .primary)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .frame(minWidth: 36)
-        .background(isSelected ? Color.black : Color(.systemGray5))
-        .clipShape(Capsule())
-    }
-}
-
-extension View {
-    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
-    }
-}
+// Removed custom period button and conditional view helper in favor of segmented controls
 
  

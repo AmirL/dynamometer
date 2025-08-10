@@ -14,15 +14,18 @@ struct ContentView: View {
     @Query private var readings: [Reading]
 
     var body: some View {
-        TabView {
-            LogView()
-                .tabItem { Label("Log", systemImage: "plus.circle") }
+        ZStack {
+            Theme.backgroundGradient.ignoresSafeArea()
+            TabView {
+                LogView()
+                    .tabItem { Label("Log", systemImage: "plus.circle") }
 
-            ChartView()
-                .tabItem { Label("Chart", systemImage: "chart.xyaxis.line") }
+                ChartView()
+                    .tabItem { Label("Chart", systemImage: "chart.xyaxis.line") }
 
-            SettingsView()
-                .tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
+                SettingsView()
+                    .tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
+            }
         }
         .onAppear {
             ensureSettings()

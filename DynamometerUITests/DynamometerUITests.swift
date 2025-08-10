@@ -25,7 +25,7 @@ final class DynamometerUITests: XCTestCase {
     @MainActor
     func testExample() throws {
         let app = XCUIApplication()
-        app.launchArguments += ["UI_TESTS_SEED_DATA", "UI_TESTS_IN_MEMORY"]
+        app.launchArguments += ["UI_TESTS_SEED_DATA", "UI_TESTS_IN_MEMORY", "UI_TESTS_FORCE_DARK"]
         app.launch()
         
         app.tabBars.buttons["Chart"].tap()
@@ -41,7 +41,10 @@ final class DynamometerUITests: XCTestCase {
         
         // If chart exists, test the period selection
         if chartExists {
-            let allButton = app.buttons["period_all"]
+            // Tap the 'All' segment in the period segmented control
+            let periodSegmented = app.segmentedControls["period_segmented"]
+            XCTAssertTrue(periodSegmented.waitForExistence(timeout: 2))
+            let allButton = periodSegmented.buttons["All"]
             XCTAssertTrue(allButton.waitForExistence(timeout: 2))
             allButton.tap()
             XCTAssertTrue(app.otherElements["chart_container"].waitForExistence(timeout: 2))

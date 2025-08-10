@@ -68,6 +68,8 @@ struct SettingsView: View {
                         } label: {
                             Label("Import CSV", systemImage: "square.and.arrow.down")
                         }
+                        .buttonStyle(.bordered)
+                        .tint(Theme.tint)
                         .fileImporter(isPresented: $showImporter, allowedContentTypes: [UTType.commaSeparatedText, .plainText]) { res in
                             switch res {
                             case .success(let url):
@@ -87,6 +89,9 @@ struct SettingsView: View {
                     ContentUnavailableView("No Settings", systemImage: "gearshape", description: Text("Settings will be created automatically."))
                 }
             }
+            .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+            .background(Theme.backgroundGradient.ignoresSafeArea())
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Settings")
             .onAppear { ensureSettings(); syncTextFromSettings() }

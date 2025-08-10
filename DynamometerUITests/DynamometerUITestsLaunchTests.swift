@@ -20,6 +20,7 @@ final class DynamometerUITestsLaunchTests: XCTestCase {
     @MainActor
     func testLaunch() throws {
         let app = XCUIApplication()
+        app.launchArguments += ["UI_TESTS_FORCE_DARK"]
         app.launch()
 
         // Insert steps here to perform after app launch but before taking a screenshot,

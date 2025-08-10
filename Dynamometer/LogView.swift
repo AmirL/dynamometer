@@ -21,7 +21,10 @@ struct LogView: View {
                     DatePicker("Date", selection: $date, displayedComponents: [.date])
                     Button(action: saveReading) {
                         Label("Save Reading", systemImage: "tray.and.arrow.down")
-                    }.disabled(parsedValue == nil)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Theme.tint)
+                    .disabled(parsedValue == nil)
                 }
 
                 if !readings.isEmpty, let set = settings.first {
@@ -31,13 +34,14 @@ struct LogView: View {
                                 VStack(alignment: .leading) {
                                     Text("\(r.value, specifier: "%.1f") kg")
                                         .font(.headline)
+                                        .monospacedDigit()
                                     Text(r.date, style: .date).font(.caption).foregroundStyle(.secondary)
                                 }
                                 Spacer()
                                 let category = classify(r.value, with: set)
                                 Text(category.label)
                                     .font(.caption).bold()
-                                    .padding(.horizontal, 8).padding(.vertical, 4)
+                                    .padding(.horizontal, 10).padding(.vertical, 6)
                                     .background(category.color.opacity(0.15))
                                     .foregroundStyle(category.color)
                                     .clipShape(Capsule())
@@ -47,6 +51,9 @@ struct LogView: View {
                     }
                 }
             }
+            .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+            .background(Theme.backgroundGradient.ignoresSafeArea())
             .scrollDismissesKeyboard(.interactively)
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {

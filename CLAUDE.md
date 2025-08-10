@@ -43,3 +43,4 @@ This is an Xcode project. Use standard Xcode build commands:
 - Color-coded readings (red=below, green=above, gray=baseline)
 - CSV import with flexible parsing
 - Automatic baseline recalculation from recent data
+- Build app only to my connected device

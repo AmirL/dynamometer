@@ -42,6 +42,8 @@ struct DynamometerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(.dark)
+                .tint(Theme.tint)
         }
         .modelContainer(sharedModelContainer)
     }
