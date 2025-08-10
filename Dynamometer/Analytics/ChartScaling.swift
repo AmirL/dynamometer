@@ -4,8 +4,6 @@ enum ChartScaling {
     static func visibleWidth(period: String, minDate: Date, maxDate: Date) -> TimeInterval {
         let calendar = Calendar.current
         switch period {
-        case "1W":
-            return calendar.date(byAdding: .weekOfYear, value: 1, to: maxDate)!.timeIntervalSince(maxDate)
         case "1M":
             return calendar.date(byAdding: .month, value: 1, to: maxDate)!.timeIntervalSince(maxDate)
         case "3M":
@@ -43,4 +41,3 @@ enum ChartScaling {
         return Swift.max(start, minDate)...maxDate
     }
 }
-

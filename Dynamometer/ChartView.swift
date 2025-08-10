@@ -61,7 +61,7 @@ struct ChartView: View {
                     y: .value("Value", point.value)
                 )
                 .symbolSize(28)
-                .foregroundStyle(.primary.opacity(0.25))
+                .foregroundStyle(.primary.opacity(0.8))
             }
             
             // Thick SMA line
@@ -132,8 +132,8 @@ struct ChartView: View {
         let smaValues = chartData.compactMap(\.smaValue)
         let allValues = values + smaValues
         
-        let minV = min(allValues.min() ?? settings.baselineMin, settings.baselineMin) - 5
-        let maxV = max(allValues.max() ?? settings.baselineMax, settings.baselineMax) + 5
+        let minV = min(allValues.min() ?? settings.baselineMin, settings.baselineMin) - 1
+        let maxV = max(allValues.max() ?? settings.baselineMax, settings.baselineMax) + 1
         return minV...maxV
     }
     
@@ -142,7 +142,6 @@ struct ChartView: View {
             get: { settings.chartPeriod },
             set: { settings.chartPeriod = $0 }
         )) {
-            Text("1W").tag("1W")
             Text("1M").tag("1M")
             Text("3M").tag("3M")
             Text("6M").tag("6M")

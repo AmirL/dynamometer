@@ -13,7 +13,6 @@ extension Array where Element == Reading {
 
     let cutoffDate: Date = {
       switch period {
-      case "1W": return calendar.date(byAdding: .weekOfYear, value: -1, to: now) ?? .distantPast
       case "1M": return calendar.date(byAdding: .month, value: -1, to: now) ?? .distantPast
       case "3M": return calendar.date(byAdding: .month, value: -3, to: now) ?? .distantPast
       case "6M": return calendar.date(byAdding: .month, value: -6, to: now) ?? .distantPast
@@ -91,4 +90,3 @@ extension Array where Element == Reading {
     return result
   }
 }
-
