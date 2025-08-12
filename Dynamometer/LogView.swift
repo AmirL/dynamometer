@@ -25,6 +25,9 @@ struct LogView: View {
             .navigationTitle("Dynamometer")
             .toolbar { keyboardToolbar }
             .toolbar { trailingToolbar }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                resetDateIfNeeded()
+            }
         }
     }
 
@@ -46,9 +49,17 @@ struct LogView: View {
         for i in offsets { modelContext.delete(readings[i]) }
         try? modelContext.save()
     }
+    
+    private func resetDateIfNeeded() {
+        let today = Calendar.current.startOfDay(for: .now)
+        let selectedDay = Calendar.current.startOfDay(for: date)
+        if today != selectedDay {
+            date = .now
+        }
+    }
 
     // Colors and labels for recent entries now come from shared GuidanceLogic
-    
+
     // MARK: - Sections
 
     @ViewBuilder
@@ -67,7 +78,7 @@ struct LogView: View {
             .disabled(parsedValue == nil)
         }
     }
-    
+
     @ViewBuilder
     private func recentLogsSection(settings: AppSettings) -> some View {
         Section(header: Text("Recent")) {
@@ -77,16 +88,16 @@ struct LogView: View {
             .onDelete(perform: delete)
         }
     }
-    
+
     // MARK: - Toolbars
-    
+
     private var keyboardToolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .keyboard) {
             Spacer()
             Button("Done") { valueFieldFocused = false }
         }
     }
-    
+
     private var trailingToolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             EditButton()

@@ -23,8 +23,8 @@ Dynamometer is a SwiftUI iOS app for tracking grip strength measurements using a
 
 ## Build Commands
 
-This is an Xcode project. Use standard Xcode build commands:
-- Build: `xcodebuild -project Dynamometer.xcodeproj -scheme Dynamometer build`
+This is an Xcode project. Use these build commands:
+- Build/Lint: `xcodebuild -project Dynamometer.xcodeproj -scheme Dynamometer -destination "platform=iOS,name=iPhone Amir" build`
 - Test: `xcodebuild -project Dynamometer.xcodeproj -scheme Dynamometer test`
 - Archive: `xcodebuild -project Dynamometer.xcodeproj -scheme Dynamometer archive`
 
@@ -44,3 +44,4 @@ This is an Xcode project. Use standard Xcode build commands:
 - CSV import with flexible parsing
 - Automatic baseline recalculation from recent data
 - Build app only to my connected device
+- When you need to run or build app, do it for my physical iPhone that connected to xcode.
