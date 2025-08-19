@@ -7,6 +7,19 @@
 import SwiftUI
 import SwiftData
 
+#Preview {
+    @Previewable @State var valueText = ""
+    @Previewable @State var date = Date()
+    @Previewable @FocusState var valueFieldFocused: Bool
+    
+    DataEntrySection(
+        valueText: $valueText,
+        date: $date,
+        valueFieldFocused: $valueFieldFocused,
+        onSave: { print("Save tapped") }
+    )
+}
+
 struct DataEntrySection: View {
     @Environment(\.modelContext) private var modelContext
     @Binding var valueText: String
@@ -27,7 +40,7 @@ struct DataEntrySection: View {
             Button(action: onSave) {
                 Label("Add", systemImage: "tray.and.arrow.down")
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.bordered)
             .tint(Theme.tint)
             .disabled(!isValidInput)
         }

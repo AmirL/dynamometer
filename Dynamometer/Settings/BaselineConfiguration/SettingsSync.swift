@@ -22,7 +22,7 @@ struct SettingsSync {
         minText: String,
         maxText: String,
         modelContext: ModelContext
-    ) -> (updatedMaxText: String?) {
+    ) -> String? {
         let result = settings.updateBaseline(minText: minText, maxText: maxText)
         
         var updatedMaxText: String? = nil
@@ -31,6 +31,6 @@ struct SettingsSync {
         }
         
         try? modelContext.save()
-        return (updatedMaxText: updatedMaxText)
+        return updatedMaxText
     }
 }

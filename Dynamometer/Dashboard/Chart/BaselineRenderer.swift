@@ -19,21 +19,20 @@ struct BaselineRenderer {
         .clipShape(Rectangle())
     }
     
+    @ChartContentBuilder
     static func baselineBoundaries(settings: AppSettings, xRange: ClosedRange<Date>) -> some ChartContent {
-        Group {
-            LineMark(
-                x: .value("Date", xRange.lowerBound),
-                y: .value("Min", settings.baselineMin)
-            )
-            .foregroundStyle(.gray.opacity(0.5))
-            .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
-            
-            LineMark(
-                x: .value("Date", xRange.upperBound),
-                y: .value("Max", settings.baselineMax)
-            )
-            .foregroundStyle(.gray.opacity(0.5))
-            .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
-        }
+        LineMark(
+            x: .value("Date", xRange.lowerBound),
+            y: .value("Min", settings.baselineMin)
+        )
+        .foregroundStyle(.gray.opacity(0.5))
+        .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
+        
+        LineMark(
+            x: .value("Date", xRange.upperBound),
+            y: .value("Max", settings.baselineMax)
+        )
+        .foregroundStyle(.gray.opacity(0.5))
+        .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
     }
 }

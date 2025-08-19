@@ -19,7 +19,7 @@ Every Swift file must start with requirements in this format:
 ```swift
 /** Requirements:
     - Brief, human-readable description of what this does
-    - Focus on user-facing behavior, not implementation  
+    - Focus on user-facing behavior, not implementation
     - Keep bullet points conversational and short
 */
 ```
@@ -30,7 +30,7 @@ Examples:
 
 ### Module Structure
 - Each functional area gets its own module directory
-- Include README.md with module overview and component list
+- Module documentation is stored in `docs/modules/` directory to avoid build conflicts
 - Break complex features into focused, single-responsibility files
 - Use descriptive, requirement-based file names
 
@@ -41,6 +41,17 @@ This is an Xcode project. Use these build commands:
 - Build/Lint: `xcodebuild -project Dynamometer.xcodeproj -scheme Dynamometer -destination "platform=iOS,name=iPhone Amir" build`
 - Test: `xcodebuild -project Dynamometer.xcodeproj -scheme Dynamometer test`
 - Archive: `xcodebuild -project Dynamometer.xcodeproj -scheme Dynamometer archive`
+
+### Troubleshooting Compilation Errors
+
+When build fails, use this command to see specific error messages:
+```bash
+xcodebuild -project Dynamometer.xcodeproj -scheme Dynamometer -destination "platform=iOS,name=iPhone Amir" build 2>&1 | grep -A5 -B5 "error:"
+```
+
+Common issues and solutions:
+- **Preview warnings**: Use `@Previewable @State` for state variables in SwiftUI previews
+
 
 ## Development Notes
 

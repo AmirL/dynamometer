@@ -94,15 +94,15 @@ struct SettingsView: View {
 
     private func updateSettingFromTexts() {
         guard let s = settings.first else { return }
-        let result = SettingsSync.updateSettingsFromText(
+        let updatedMaxText = SettingsSync.updateSettingsFromText(
             settings: s,
             minText: baselineMinText,
             maxText: baselineMaxText,
             modelContext: modelContext
         )
         
-        if let updatedMaxText = result.updatedMaxText {
-            baselineMaxText = updatedMaxText
+        if let updatedMax = updatedMaxText {
+            baselineMaxText = updatedMax
         }
     }
 }
