@@ -1,3 +1,10 @@
+/** Requirements:
+    - Chart showing grip strength over time
+    - Scrollable with time period controls  
+    - Show baseline corridor and trend line
+    - Color points by performance zone
+*/
+
 import SwiftUI
 import SwiftData
 import Charts

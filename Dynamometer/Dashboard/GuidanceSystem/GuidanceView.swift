@@ -1,6 +1,10 @@
-import SwiftUI
+/** Requirements:
+    - Show today's reading classification with color coding
+    - Display performance feedback messages
+    - Help button for guidance explanations
+*/
 
-// Compact summary row shown under the chart.
+import SwiftUI
 struct GuidanceSummarySection: View {
   let value: Double
   let settings: AppSettings

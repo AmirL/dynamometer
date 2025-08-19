@@ -1,3 +1,9 @@
+/** Requirements:
+    - Data points with date, value, and moving average
+    - Filter by time periods (1M, 3M, 6M, All)
+    - Calculate simple moving averages
+*/
+
 import Foundation
 
 struct ChartDataPoint {

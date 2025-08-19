@@ -30,27 +30,15 @@ struct DashboardView: View {
           TrendGuidanceSection(trendValue: trend, settings: set)
         }
 
-        Section(header: Text("Add value")) {
-          TextField("Grip strength (kg)", text: $valueText)
-            .keyboardType(.decimalPad)
-            .focused($valueFieldFocused)
-            .submitLabel(.done)
-          DatePicker("Date", selection: $date, displayedComponents: [.date])
-          Button(action: saveReading) {
-            Label("Add", systemImage: "tray.and.arrow.down")
-          }
-          .buttonStyle(.borderedProminent)
-          .tint(Theme.tint)
-          .disabled(parsedValue == nil)
-        }
+        DataEntrySection(
+          valueText: $valueText,
+          date: $date,
+          valueFieldFocused: $valueFieldFocused,
+          onSave: saveReading
+        )
 
-        if !readings.isEmpty, let set = settings.first {
-          Section(header: Text("Recent")) {
-            ForEach(readings.prefix(10)) { r in
-              ReadingRow(reading: r, settings: set)
-            }
-            .onDelete(perform: delete)
-          }
+        if let set = settings.first {
+          ReadingsList(readings: readings, settings: set, onDelete: delete)
         }
       }
       .formStyle(.grouped)
@@ -72,12 +60,9 @@ struct DashboardView: View {
     return 320
   }
 
-  private var parsedValue: Double? {
-    Double(valueText.replacingOccurrences(of: ",", with: "."))
-  }
 
   private func saveReading() {
-    guard let v = parsedValue else { return }
+    guard let v = NumberFormatting.parseDecimal(valueText) else { return }
     let reading = Reading(date: date, value: v)
     modelContext.insert(reading)
     try? modelContext.save()
@@ -88,8 +73,7 @@ struct DashboardView: View {
   }
 
   private func delete(at offsets: IndexSet) {
-    for i in offsets { modelContext.delete(readings[i]) }
-    try? modelContext.save()
+    ListActions.deleteReadings(at: offsets, from: readings, context: modelContext)
     reload()
   }
 
@@ -137,25 +121,5 @@ struct DashboardView: View {
   }
 }
 
-private struct ReadingRow: View {
-  let reading: Reading
-  let settings: AppSettings
-
-  var body: some View {
-    HStack {
-      VStack(alignment: .leading) {
-        Text("\(reading.value, specifier: "%.1f") kg")
-          .font(.headline)
-          .monospacedDigit()
-        Text(reading.date, style: .date)
-          .font(.caption)
-          .foregroundStyle(.secondary)
-      }
-      Spacer()
-      let tag = listTag(for: reading.value, with: settings)
-      Pill(label: tag.label, color: tag.color)
-    }
-  }
-}
 
  

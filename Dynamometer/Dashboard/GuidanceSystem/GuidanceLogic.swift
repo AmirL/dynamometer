@@ -1,3 +1,9 @@
+/** Requirements:
+    - Classify readings as below/within/above baseline
+    - Provide color coding for performance zones
+    - Generate labels and feedback messages
+*/
+
 import SwiftUI
 import SwiftData
 

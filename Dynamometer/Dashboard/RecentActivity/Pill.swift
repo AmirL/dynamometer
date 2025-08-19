@@ -1,3 +1,8 @@
+/** Requirements:
+    - Small rounded badge with text and background color
+    - Used for classification labels in reading rows
+*/
+
 import SwiftUI
 
 struct Pill: View {

@@ -1,3 +1,10 @@
+/** Requirements:
+    - Parse CSV with flexible date formats
+    - Support both comma and semicolon separators
+    - Handle various column orders (date,value or value,date)
+    - Skip header rows and invalid data
+*/
+
 import Foundation
 
 struct CSVImport {

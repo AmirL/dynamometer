@@ -1,3 +1,10 @@
+/** Requirements:
+    - Generate CSV with date,value format
+    - Use ISO 8601 date format for consistency
+    - Include header row for clarity
+    - Support SwiftUI document export
+*/
+
 import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
