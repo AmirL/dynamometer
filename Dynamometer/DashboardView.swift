@@ -7,7 +7,6 @@ struct DashboardView: View {
   @State private var settings: [AppSettings] = []
 
   @State private var valueText: String = ""
-  @State private var date: Date = .now
   @FocusState private var valueFieldFocused: Bool
 
   @Environment(\.horizontalSizeClass) private var hSize
@@ -32,7 +31,6 @@ struct DashboardView: View {
 
         DataEntrySection(
           valueText: $valueText,
-          date: $date,
           valueFieldFocused: $valueFieldFocused,
           onSave: saveReading
         )
@@ -63,12 +61,11 @@ struct DashboardView: View {
 
   private func saveReading() {
     guard let v = NumberFormatting.parseDecimal(valueText),
-          let reading = Reading.create(date: date, value: v) else { return }
+          let reading = Reading.create(date: Date(), value: v) else { return }
     modelContext.insert(reading)
     try? modelContext.save()
     valueText = ""
     valueFieldFocused = false
-    date = .now
     reload()
   }
 

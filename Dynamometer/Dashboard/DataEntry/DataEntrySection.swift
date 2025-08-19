@@ -9,12 +9,10 @@ import SwiftData
 
 #Preview {
     @Previewable @State var valueText = ""
-    @Previewable @State var date = Date()
     @Previewable @FocusState var valueFieldFocused: Bool
     
     DataEntrySection(
         valueText: $valueText,
-        date: $date,
         valueFieldFocused: $valueFieldFocused,
         onSave: { print("Save tapped") }
     )
@@ -23,26 +21,26 @@ import SwiftData
 struct DataEntrySection: View {
     @Environment(\.modelContext) private var modelContext
     @Binding var valueText: String
-    @Binding var date: Date
     @FocusState.Binding var valueFieldFocused: Bool
 
     let onSave: () -> Void
 
     private var isValidInput: Bool {
         guard let value = NumberFormatting.parseDecimal(valueText) else { return false }
-        return Reading.isValidGripStrength(value) && Reading.isValidDate(date)
+        return Reading.isValidGripStrength(value)
     }
 
     var body: some View {
         Section(header: Text("Add value")) {
-            ValueInputView(valueText: $valueText, isFocused: $valueFieldFocused)
-            DatePickerView(date: $date)
-            Button(action: onSave) {
-                Label("Add", systemImage: "tray.and.arrow.down")
+            HStack {
+                ValueInputView(valueText: $valueText, isFocused: $valueFieldFocused)
+                Button(action: onSave) {
+                    Label("Add", systemImage: "tray.and.arrow.down")
+                }
+                .buttonStyle(.bordered)
+                .tint(Theme.tint)
+                .disabled(!isValidInput)
             }
-            .buttonStyle(.bordered)
-            .tint(Theme.tint)
-            .disabled(!isValidInput)
         }
     }
 }
