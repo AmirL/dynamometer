@@ -10,41 +10,97 @@ import SwiftData
 
 @main
 struct DynamometerApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Reading.self,
-            AppSettings.self
-        ])
-        // Use in-memory store when running UI tests for determinism
-        let isUITestInMemory = CommandLine.arguments.contains("UI_TESTS_IN_MEMORY")
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: isUITestInMemory)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            // If migration fails, delete the store and create fresh
-            print("Migration failed, deleting store and creating fresh: \(error)")
-            
-            // Delete existing store files
-            let url = URL.applicationSupportDirectory.appending(path: "default.store")
-            try? FileManager.default.removeItem(at: url)
-            try? FileManager.default.removeItem(at: url.appendingPathExtension("wal"))
-            try? FileManager.default.removeItem(at: url.appendingPathExtension("shm"))
-            
-            do {
-                return try ModelContainer(for: schema, configurations: [modelConfiguration])
-            } catch {
-                fatalError("Could not create ModelContainer even with fresh start: \(error)")
-            }
-        }
-    }()
+    @Query private var settings: [AppSettings]
+    @StateObject private var migrationManager = MigrationManager()
+    @State private var modelContainer: ModelContainer?
+    @State private var showMigrationAlert = false
+    
+    private let schema = Schema([
+        Reading.self,
+        AppSettings.self
+    ])
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .preferredColorScheme(.dark)
-                .tint(Theme.tint)
+            Group {
+                if let container = modelContainer {
+                    ContentView()
+                        .preferredColorScheme(colorScheme)
+                        .tint(Theme.tint)
+                        .modelContainer(container)
+                } else {
+                    ProgressView("Loading...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Theme.backgroundGradient.ignoresSafeArea())
+                }
+            }
+            .sheet(isPresented: $showMigrationAlert) {
+                MigrationAlertView(
+                    migrationManager: migrationManager,
+                    showingAlert: $showMigrationAlert,
+                    onRetry: retryMigration,
+                    onStartFresh: startFresh
+                )
+                .interactiveDismissDisabled()
+            }
+            .task {
+                await initializeModelContainer()
+            }
         }
-        .modelContainer(sharedModelContainer)
+    }
+    
+    private var colorScheme: ColorScheme? {
+        guard let appearance = settings.first?.appearance else { return nil }
+        
+        switch appearance {
+        case .light:
+            return .light
+        case .dark:
+            return .dark
+        case .system:
+            return nil
+        }
+    }
+    
+    private func initializeModelContainer() async {
+        let isUITestInMemory = CommandLine.arguments.contains("UI_TESTS_IN_MEMORY")
+        
+        do {
+            let container = try await migrationManager.createModelContainer(
+                schema: schema,
+                isInMemory: isUITestInMemory
+            )
+            await MainActor.run {
+                modelContainer = container
+            }
+        } catch {
+            await MainActor.run {
+                showMigrationAlert = true
+            }
+        }
+    }
+    
+    private func retryMigration() {
+        Task {
+            await initializeModelContainer()
+        }
+    }
+    
+    private func startFresh() {
+        Task {
+            let isUITestInMemory = CommandLine.arguments.contains("UI_TESTS_IN_MEMORY")
+            
+            do {
+                let container = try await migrationManager.deleteExistingStoreAndCreateFresh(
+                    schema: schema,
+                    isInMemory: isUITestInMemory
+                )
+                await MainActor.run {
+                    modelContainer = container
+                }
+            } catch {
+                print("Failed to create fresh container: \(error)")
+            }
+        }
     }
 }
