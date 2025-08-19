@@ -62,8 +62,8 @@ struct DashboardView: View {
 
 
   private func saveReading() {
-    guard let v = NumberFormatting.parseDecimal(valueText) else { return }
-    let reading = Reading(date: date, value: v)
+    guard let v = NumberFormatting.parseDecimal(valueText),
+          let reading = Reading.create(date: date, value: v) else { return }
     modelContext.insert(reading)
     try? modelContext.save()
     valueText = ""

@@ -15,8 +15,9 @@ struct DataEntrySection: View {
 
     let onSave: () -> Void
 
-    private var parsedValue: Double? {
-        InputValidation.parseDecimal(valueText)
+    private var isValidInput: Bool {
+        guard let value = NumberFormatting.parseDecimal(valueText) else { return false }
+        return Reading.isValidGripStrength(value) && Reading.isValidDate(date)
     }
 
     var body: some View {
@@ -28,7 +29,7 @@ struct DataEntrySection: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(Theme.tint)
-            .disabled(parsedValue == nil)
+            .disabled(!isValidInput)
         }
     }
 }

@@ -6,20 +6,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Dynamometer is a SwiftUI iOS app for tracking grip strength measurements using a hand dynamometer. The app provides logging, visualization, and data import capabilities.
 
-## Architecture
+## Code Organization & Design Approach
 
-**SwiftData Models (Item.swift:11-31)**:
-- `Reading`: Core data model storing date and grip strength value
-- `AppSettings`: Baseline configuration for corridor min/max values
+### Requirements-Based File Structure
+- Organize files by functional requirements, not technical categories
+- Structure: `Level1/Level2/Level3/` where each level represents user-facing features
+- Example: `Dashboard/DataEntry/` contains all data input related files
+- Each directory has a `README.md` with high-level requirements overview
 
-**Views**:
-- `ContentView`: Main TabView container with three tabs
-- `LogView`: Data entry form with recent readings list and classification
-- `ChartView`: Swift Charts visualization with baseline corridor and colored points
-- `SettingsView`: Baseline configuration and CSV import functionality
+### File Requirements Format
+Every Swift file must start with requirements in this format:
+```swift
+/** Requirements:
+    - Brief, human-readable description of what this does
+    - Focus on user-facing behavior, not implementation  
+    - Keep bullet points conversational and short
+*/
+```
 
-**Data Import**:
-- `CSVImport`: Flexible CSV parser supporting multiple date formats and column orders
+Examples:
+- Good: "Parse decimals with comma or dot"
+- Avoid: "Validation logic for input fields ensuring data integrity"
+
+### Module Structure
+- Each functional area gets its own module directory
+- Include README.md with module overview and component list
+- Break complex features into focused, single-responsibility files
+- Use descriptive, requirement-based file names
+
 
 ## Build Commands
 
