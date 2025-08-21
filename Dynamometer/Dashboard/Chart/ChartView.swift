@@ -14,6 +14,8 @@ struct ChartView: View {
     @Query private var settings: [AppSettings]
     @State private var scrollPosition: Date = .now
     @State private var hasInitialized = false
+    @State private var stableYDomain: ClosedRange<Double>? = nil
+    @State private var lastVisibleDataHash: Int = 0
     var chartHeight: CGFloat? = nil
 
     var body: some View {
@@ -107,6 +109,8 @@ struct ChartView: View {
         .onChange(of: settings.chartPeriod) { _, _ in
             // Reset initialization flag when changing zoom level to reposition
             hasInitialized = false
+            stableYDomain = nil // Reset Y-axis scaling
+            lastVisibleDataHash = 0
             if let last = allChartData.last?.date {
                 DispatchQueue.main.async {
                     scrollPosition = last
@@ -116,11 +120,18 @@ struct ChartView: View {
         }
         .onChange(of: readings.count) { _, _ in
             // When new readings arrive, keep view scrolled to the newest point
+            stableYDomain = nil // Reset Y-axis scaling for new data
+            lastVisibleDataHash = 0
             if let last = allChartData.last?.date {
                 DispatchQueue.main.async {
                     scrollPosition = last
                 }
             }
+        }
+        .onChange(of: settings.chartScale) { _, _ in
+            // Reset Y-axis scaling when scale changes
+            stableYDomain = nil
+            lastVisibleDataHash = 0
         }
         .chartXAxis {
             AxisMarks(values: .automatic(desiredCount: 6))
@@ -135,13 +146,93 @@ struct ChartView: View {
     }
 
     private func domainY(chartData: [ChartDataPoint], settings: AppSettings) -> ClosedRange<Double> {
-        let values = chartData.map(\.value)
-        let smaValues = chartData.compactMap(\.smaValue)
-        let allValues = values + smaValues
+        let visibleData = visibleChartData(chartData: chartData, settings: settings)
         
-        let minV = min(allValues.min() ?? settings.baselineMin, settings.baselineMin) - 1
-        let maxV = max(allValues.max() ?? settings.baselineMax, settings.baselineMax) + 1
-        return minV...maxV
+        // Create a hash of the visible data to detect if it actually changed
+        let visibleDataHash = visibleData.map { "\($0.date.timeIntervalSince1970)_\($0.value)" }.joined().hashValue
+        
+        // If the visible data hasn't changed, return the stable domain
+        if let stableDomain = stableYDomain, visibleDataHash == lastVisibleDataHash {
+            return stableDomain
+        }
+        
+        let values = visibleData.map(\.value)
+        let smaValues = visibleData.compactMap(\.smaValue)
+        let allVisibleValues = values + smaValues
+        
+        guard !allVisibleValues.isEmpty else {
+            // When no data is visible, keep the current stable domain if we have one
+            // This prevents zoom-out when scrolling through empty periods
+            if let currentStableDomain = stableYDomain {
+                return currentStableDomain
+            }
+            
+            // Fallback for initial load with no data
+            let minV = min(settings.baselineMin, settings.baselineMax) - 5
+            let maxV = max(settings.baselineMin, settings.baselineMax) + 5
+            let domain = minV...maxV
+            DispatchQueue.main.async {
+                self.stableYDomain = domain
+                self.lastVisibleDataHash = visibleDataHash
+            }
+            return domain
+        }
+        
+        let dataMin = allVisibleValues.min()!
+        let dataMax = allVisibleValues.max()!
+        let dataRange = dataMax - dataMin
+        
+        // Add padding based on data range, minimum 2 units
+        let padding = 1.0
+        
+        // Include baseline corridor in the range, but don't let it dominate
+        let minV = min(dataMin - padding, settings.baselineMin - padding)
+        let maxV = max(dataMax + padding, settings.baselineMax + padding)
+        
+        let domain = minV...maxV
+        
+        // Update stable domain asynchronously to avoid state updates during view updates
+        DispatchQueue.main.async {
+            self.stableYDomain = domain
+            self.lastVisibleDataHash = visibleDataHash
+        }
+        
+        return domain
+    }
+    
+    private func visibleChartData(chartData: [ChartDataPoint], settings: AppSettings) -> [ChartDataPoint] {
+        guard !chartData.isEmpty else { return [] }
+        
+        // Use a fixed visible window width instead of the period-based width
+        // This ensures we only see data points actually visible on screen
+        let visibleDays: Double = {
+            switch settings.chartPeriod {
+            case "1M": return 30
+            case "3M": return 90 
+            case "6M": return 180
+            case "1Y": return 365
+            case "All": return 90 // Use 3 months window even for "All" period
+            default: return 90
+            }
+        }()
+        
+        let visibleWidth = visibleDays * 86400 // Convert days to seconds
+        let halfWidth = visibleWidth / 2
+        let visibleStartDate = scrollPosition.addingTimeInterval(-halfWidth)
+        let visibleEndDate = scrollPosition.addingTimeInterval(halfWidth)
+        
+        // Filter to points within the visible window
+        let visiblePoints = chartData.filter { point in
+            point.date >= visibleStartDate && point.date <= visibleEndDate
+        }
+        
+        // If no points are visible, return a small subset around scroll position
+        if visiblePoints.isEmpty {
+            let nearestPoint = chartData.min { abs($0.date.timeIntervalSince(scrollPosition)) < abs($1.date.timeIntervalSince(scrollPosition)) }
+            return nearestPoint.map { [$0] } ?? []
+        }
+        
+        return visiblePoints
     }
     
     private func periodSegmented(settings: AppSettings) -> some View {
@@ -179,6 +270,113 @@ struct ChartView: View {
     }
 }
 
-// Removed custom period button and conditional view helper in favor of segmented controls
+#Preview("Normal Range Data") {
+    @Previewable @State var normalRangeReadings: [Reading] = ChartView.generateCyclicReadings(
+        months: 6,
+        baseValue: 42.0,
+        cycleAmplitude: 8.0,
+        cycleLength: 14,
+        noise: 2.5,
+        trend: 0.05
+    )
+    
+    @Previewable @State var normalSettings = AppSettings(
+        baselineMin: 35,
+        baselineMax: 55,
+        chartPeriod: "3M",
+        chartScale: "D",
+        smaWindow: 7
+    )
+    
+    @Previewable @State var normalContainer = try! ModelContainer(
+        for: Reading.self, AppSettings.self,
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+    
+    ChartView()
+        .modelContainer(normalContainer)
+        .onAppear {
+            normalRangeReadings.forEach { normalContainer.mainContext.insert($0) }
+            normalContainer.mainContext.insert(normalSettings)
+            try? normalContainer.mainContext.save()
+        }
+}
 
- 
+#Preview("High Values Data") {
+    @Previewable @State var highValueReadings: [Reading] = ChartView.generateCyclicReadings(
+        months: 5,
+        baseValue: 78.0,
+        cycleAmplitude: 12.0,
+        cycleLength: 28,
+        noise: 4.0,
+        trend: 0.08
+    )
+    
+    @Previewable @State var highSettings = AppSettings(
+        baselineMin: 35,
+        baselineMax: 55,
+        chartPeriod: "3M",
+        chartScale: "D",
+        smaWindow: 7
+    )
+    
+    @Previewable @State var highContainer = try! ModelContainer(
+        for: Reading.self, AppSettings.self,
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+    
+    ChartView()
+        .modelContainer(highContainer)
+        .onAppear {
+            highValueReadings.forEach { highContainer.mainContext.insert($0) }
+            highContainer.mainContext.insert(highSettings)
+            try? highContainer.mainContext.save()
+        }
+}
+
+// MARK: - Preview Data Seeding Helper
+
+extension ChartView {
+    static func generateCyclicReadings(
+        months: Int = 4,
+        baseValue: Double = 45.0,
+        cycleAmplitude: Double = 15.0,
+        cycleLength: Int = 21, // days per cycle
+        noise: Double = 3.0,
+        trend: Double = 0.1 // daily trend
+    ) -> [Reading] {
+        let calendar = Calendar.current
+        let endDate = Date.now
+        let startDate = calendar.date(byAdding: .month, value: -months, to: endDate)!
+        
+        var readings: [Reading] = []
+        var currentDate = startDate
+        var dayIndex = 0
+        
+        while currentDate <= endDate {
+            // Cyclic component (sine wave)
+            let cyclePhase = (Double(dayIndex % cycleLength) / Double(cycleLength)) * 2 * Double.pi
+            let cycleValue = sin(cyclePhase) * cycleAmplitude
+            
+            // Trend component
+            let trendValue = Double(dayIndex) * trend
+            
+            // Noise component
+            let noiseValue = Double.random(in: -noise...noise)
+            
+            // Combine all components
+            let finalValue = baseValue + cycleValue + trendValue + noiseValue
+            
+            // Ensure realistic values
+            let clampedValue = max(10.0, min(120.0, finalValue))
+            
+            readings.append(Reading(date: currentDate, value: clampedValue))
+            
+            // Move to next day
+            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            dayIndex += 1
+        }
+        
+        return readings
+    }
+}
