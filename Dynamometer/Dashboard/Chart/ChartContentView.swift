@@ -14,7 +14,11 @@ struct ChartContentView: View {
     let height: CGFloat?
     
     private var minDate: Date { chartData.first?.date ?? .now }
-    private var maxDate: Date { chartData.last?.date ?? .now }
+    private var maxDate: Date { 
+        let lastDate = chartData.last?.date ?? .now
+        let rightPadding: TimeInterval = 3 * 24 * 60 * 60 // 3 days in seconds
+        return lastDate.addingTimeInterval(rightPadding)
+    }
     
     var body: some View {
         ZStack {
@@ -129,4 +133,5 @@ struct ChartContentView: View {
             hasInitialized: state.hasInitialized
         )
     }
+    
 }
