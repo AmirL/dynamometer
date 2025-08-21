@@ -10,6 +10,7 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var systemColorScheme
     @Query private var settings: [AppSettings]
     @Query private var readings: [Reading]
 
@@ -24,9 +25,28 @@ struct ContentView: View {
                     .tabItem { Label("Settings", systemImage: "slider.horizontal.3") }
             }
         }
+        .preferredColorScheme(colorScheme)
         .onAppear {
             ensureSettings()
             seedUITestDataIfNeeded()
+        }
+    }
+    
+    private var colorScheme: ColorScheme? {
+        guard let firstSetting = settings.first else { 
+            return nil 
+        }
+        
+        let appearance = firstSetting.appearance
+        
+        switch appearance {
+        case .light:
+            return .light
+        case .dark:
+            return .dark
+        case .system:
+            // Return nil to let system decide, but we'll handle the update differently
+            return nil
         }
     }
 

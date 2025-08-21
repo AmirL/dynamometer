@@ -21,6 +21,10 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 if settingsBinding != nil {
+                    if let set = settings.first {
+                        AppearanceSettings(settings: set, modelContext: modelContext)
+                    }
+                    
                     BaselineEditor(
                         minText: $baselineMinText,
                         maxText: $baselineMaxText,

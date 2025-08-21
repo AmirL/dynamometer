@@ -10,7 +10,6 @@ import SwiftData
 
 @main
 struct DynamometerApp: App {
-    @Query private var settings: [AppSettings]
     @StateObject private var migrationManager = MigrationManager()
     @State private var modelContainer: ModelContainer?
     @State private var showMigrationAlert = false
@@ -25,7 +24,6 @@ struct DynamometerApp: App {
             Group {
                 if let container = modelContainer {
                     ContentView()
-                        .preferredColorScheme(colorScheme)
                         .tint(Theme.tint)
                         .modelContainer(container)
                 } else {
@@ -46,19 +44,6 @@ struct DynamometerApp: App {
             .task {
                 await initializeModelContainer()
             }
-        }
-    }
-    
-    private var colorScheme: ColorScheme? {
-        guard let appearance = settings.first?.appearance else { return nil }
-        
-        switch appearance {
-        case .light:
-            return .light
-        case .dark:
-            return .dark
-        case .system:
-            return nil
         }
     }
     

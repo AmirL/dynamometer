@@ -1,6 +1,20 @@
 import Foundation
 import SwiftData
 
+enum AppearanceMode: String, CaseIterable, Codable {
+  case light = "light"
+  case dark = "dark"
+  case system = "system"
+  
+  var displayName: String {
+    switch self {
+    case .light: return "Light"
+    case .dark: return "Dark"
+    case .system: return "System"
+    }
+  }
+}
+
 @Model
 final class AppSettings {
   var baselineMin: Double
@@ -8,19 +22,27 @@ final class AppSettings {
   var chartPeriod: String
   var chartScale: String
   var smaWindow: Int
+  var appearanceMode: String
 
   init(
     baselineMin: Double = 35,
     baselineMax: Double = 55,
     chartPeriod: String = "3M",
     chartScale: String = "D",
-    smaWindow: Int = 7
+    smaWindow: Int = 7,
+    appearanceMode: AppearanceMode = .system
   ) {
     self.baselineMin = baselineMin
     self.baselineMax = Swift.max(baselineMax, baselineMin)
     self.chartPeriod = chartPeriod
     self.chartScale = chartScale
     self.smaWindow = smaWindow
+    self.appearanceMode = appearanceMode.rawValue
+  }
+  
+  var appearance: AppearanceMode {
+    get { AppearanceMode(rawValue: appearanceMode) ?? .system }
+    set { appearanceMode = newValue.rawValue }
   }
   
   // MARK: - Baseline Validation
