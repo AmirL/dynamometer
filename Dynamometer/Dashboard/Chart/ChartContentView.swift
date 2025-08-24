@@ -12,14 +12,14 @@ struct ChartContentView: View {
     let settings: AppSettings
     let state: ChartState
     let height: CGFloat?
-    
+
     private var minDate: Date { chartData.first?.date ?? .now }
-    private var maxDate: Date { 
+    private var maxDate: Date {
         let lastDate = chartData.last?.date ?? .now
         let rightPadding: TimeInterval = 3 * 24 * 60 * 60 // 3 days in seconds
         return lastDate.addingTimeInterval(rightPadding)
     }
-    
+
     var body: some View {
         ZStack {
             Chart {
@@ -52,26 +52,41 @@ struct ChartContentView: View {
         .frame(height: height ?? 220)
         .onAppear {
             if let lastDate = chartData.last?.date {
-                state.initializeScrollPosition(to: lastDate)
+                let visibleWidth = ChartScaling.visibleWidth(
+                    period: settings.chartPeriod,
+                    minDate: minDate,
+                    maxDate: maxDate
+                )
+                state.initializeScrollPosition(to: lastDate, visibleWidth: visibleWidth)
             }
         }
         .onChange(of: settings.chartPeriod) { _, _ in
             if let lastDate = chartData.last?.date {
-                state.resetForPeriodChange(to: lastDate)
+                let visibleWidth = ChartScaling.visibleWidth(
+                    period: settings.chartPeriod,
+                    minDate: minDate,
+                    maxDate: maxDate
+                )
+                state.resetForPeriodChange(to: lastDate, visibleWidth: visibleWidth)
             }
         }
         .onChange(of: chartData.count) { _, _ in
             if let lastDate = chartData.last?.date {
-                state.resetForNewData(to: lastDate)
+                let visibleWidth = ChartScaling.visibleWidth(
+                    period: settings.chartPeriod,
+                    minDate: minDate,
+                    maxDate: maxDate
+                )
+                state.resetForNewData(to: lastDate, visibleWidth: visibleWidth)
             }
         }
         .onChange(of: settings.chartScale) { _, _ in
             state.resetForScaleChange()
         }
     }
-    
+
     // MARK: - Chart Components
-    
+
     private var baselineCorridor: some ChartContent {
         RectangleMark(
             xStart: .value("Start", minDate),
@@ -81,7 +96,7 @@ struct ChartContentView: View {
         )
         .foregroundStyle(.gray.opacity(0.10))
     }
-    
+
     @ChartContentBuilder
     private var boundaryLines: some ChartContent {
         RuleMark(y: .value("Min", settings.baselineMin))
@@ -89,7 +104,7 @@ struct ChartContentView: View {
         RuleMark(y: .value("Max", settings.baselineMax))
             .foregroundStyle(.secondary)
     }
-    
+
     private var dataPoints: some ChartContent {
         ForEach(Array(chartData.enumerated()), id: \.offset) { _, point in
             PointMark(
@@ -100,7 +115,7 @@ struct ChartContentView: View {
             .foregroundStyle(.primary.opacity(0.8))
         }
     }
-    
+
     private var smaLine: some ChartContent {
         ForEach(Array(chartData.enumerated()), id: \.offset) { _, point in
             if let smaValue = point.smaValue {
@@ -114,9 +129,9 @@ struct ChartContentView: View {
             }
         }
     }
-    
+
     // MARK: - Computed Properties
-    
+
     private var yDomain: ClosedRange<Double> {
         ChartConfiguration.calculateYDomain(
             chartData: chartData,
@@ -124,7 +139,7 @@ struct ChartContentView: View {
             state: state
         )
     }
-    
+
     private var scrollDomain: ClosedRange<Date> {
         ChartScaling.scrollDomain(
             minDate: minDate,
@@ -132,5 +147,5 @@ struct ChartContentView: View {
             period: settings.chartPeriod
         )
     }
-    
+
 }
