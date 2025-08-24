@@ -1,6 +1,6 @@
 /** Requirements:
     - Chart showing grip strength over time
-    - Scrollable with time period controls  
+    - Scrollable with time period controls
     - Show baseline corridor and trend line
     - Color points by performance zone
 */
@@ -21,32 +21,28 @@ struct ChartView: View {
             chartControls
         }
     }
-    
+
     @ViewBuilder
     private var chartContent: some View {
-        Group {
-            if readings.isEmpty {
-                ChartEmptyStateView(emptyStateType: .noData)
-            } else if let appSettings = settings.first {
-                let chartData = readings.filteredByPeriod(
-                    "All",
-                    scale: appSettings.chartScale,
-                    smaWindow: appSettings.smaWindow
-                )
-                
-                ChartContentView(
-                    chartData: chartData,
-                    settings: appSettings,
-                    state: chartState,
-                    height: chartHeight
-                )
-                .cardStyle()
-            } else {
-                ChartEmptyStateView(emptyStateType: .noSettings)
-            }
+        if let appSettings = settings.first, !readings.isEmpty {
+            let chartData = readings.filteredByPeriod(
+                "All",
+                scale: appSettings.chartScale,
+                smaWindow: appSettings.smaWindow
+            )
+
+            ChartContentView(
+                chartData: chartData,
+                settings: appSettings,
+                state: chartState,
+                height: chartHeight
+            )
+            .cardStyle()
+        } else {
+            ChartEmptyStateView(emptyStateType: .noData)
         }
     }
-    
+
     @ViewBuilder
     private var chartControls: some View {
         if let appSettings = settings.first, !readings.isEmpty {
@@ -61,7 +57,7 @@ struct ChartView: View {
     let readings = ChartPreviewData.normalRangeReadings()
     let settings = ChartPreviewData.defaultSettings()
     let container = ChartPreviewData.createPreviewContainer(with: readings, settings: settings)
-    
+
     ChartView()
         .modelContainer(container)
 }
@@ -70,7 +66,7 @@ struct ChartView: View {
     let readings = ChartPreviewData.highValueReadings()
     let settings = ChartPreviewData.defaultSettings()
     let container = ChartPreviewData.createPreviewContainer(with: readings, settings: settings)
-    
+
     ChartView()
         .modelContainer(container)
 }

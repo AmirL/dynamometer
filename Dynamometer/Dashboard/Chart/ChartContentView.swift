@@ -129,8 +129,7 @@ struct ChartContentView: View {
         ChartScaling.scrollDomain(
             minDate: minDate,
             maxDate: maxDate,
-            period: settings.chartPeriod,
-            hasInitialized: state.hasInitialized
+            period: settings.chartPeriod
         )
     }
     

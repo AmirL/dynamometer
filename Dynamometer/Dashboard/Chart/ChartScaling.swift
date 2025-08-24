@@ -35,15 +35,11 @@ enum ChartScaling {
         return start...end
     }
 
-    static func scrollDomain(minDate: Date, maxDate: Date, period: String, hasInitialized: Bool) -> ClosedRange<Date> {
+    static func scrollDomain(minDate: Date, maxDate: Date, period: String) -> ClosedRange<Date> {
         if period == "All" {
             return paddedRange(minDate: minDate, maxDate: maxDate, percent: 0.02)
         }
-        if hasInitialized {
-            return minDate...maxDate
-        }
-        let width = visibleWidth(period: period, minDate: minDate, maxDate: maxDate)
-        let start = maxDate.addingTimeInterval(-width)
-        return Swift.max(start, minDate)...maxDate
+        // Always return full range to prevent domain jumps during scrolling
+        return minDate...maxDate
     }
 }

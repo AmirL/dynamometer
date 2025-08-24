@@ -10,19 +10,13 @@ import Foundation
 @Observable
 class ChartState {
     var scrollPosition: Date = .now
-    var hasInitialized = false
     var stableYDomain: ClosedRange<Double>? = nil
     var lastVisibleDataHash: Int = 0
     
     func resetForPeriodChange(to newScrollPosition: Date) {
-        hasInitialized = false
         stableYDomain = nil
         lastVisibleDataHash = 0
         scrollPosition = newScrollPosition
-        
-        DispatchQueue.main.async {
-            self.hasInitialized = true
-        }
     }
     
     func resetForNewData(to newScrollPosition: Date) {
@@ -37,12 +31,7 @@ class ChartState {
     }
     
     func initializeScrollPosition(to position: Date) {
-        guard !hasInitialized else { return }
-        
         scrollPosition = position
-        DispatchQueue.main.async {
-            self.hasInitialized = true
-        }
     }
     
     func updateStableDomain(_ domain: ClosedRange<Double>, dataHash: Int) {

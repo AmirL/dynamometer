@@ -24,37 +24,80 @@ struct ChartConfiguration {
         
         let visibleDataHash = createDataHash(from: visibleData)
         
-        if let stableDomain = state.stableYDomain, 
-           visibleDataHash == state.lastVisibleDataHash {
+        // Return stable domain if data hasn't changed
+        if let stableDomain = getStableDomainIfUnchanged(state: state, dataHash: visibleDataHash) {
             return stableDomain
         }
         
-        let values = visibleData.map(\.value)
-        let smaValues = visibleData.compactMap(\.smaValue)
-        let allVisibleValues = values + smaValues
+        let domain = calculateDomainFromVisibleData(visibleData, settings: settings, state: state, dataHash: visibleDataHash)
+        return domain
+    }
+    
+    private static func getStableDomainIfUnchanged(
+        state: ChartState,
+        dataHash: Int
+    ) -> ClosedRange<Double>? {
+        guard let stableDomain = state.stableYDomain,
+              dataHash == state.lastVisibleDataHash else {
+            return nil
+        }
+        return stableDomain
+    }
+    
+    private static func calculateDomainFromVisibleData(
+        _ visibleData: [ChartDataPoint],
+        settings: AppSettings,
+        state: ChartState,
+        dataHash: Int
+    ) -> ClosedRange<Double> {
+        let allVisibleValues = extractAllValues(from: visibleData)
         
         guard !allVisibleValues.isEmpty else {
-            if let currentStableDomain = state.stableYDomain {
-                return currentStableDomain
-            }
-            
-            let minV = min(settings.baselineMin, settings.baselineMax) - 5
-            let maxV = max(settings.baselineMin, settings.baselineMax) + 5
-            let domain = minV...maxV
-            state.updateStableDomain(domain, dataHash: visibleDataHash)
-            return domain
+            return handleEmptyData(settings: settings, state: state, dataHash: dataHash)
         }
         
-        let dataMin = allVisibleValues.min()!
-        let dataMax = allVisibleValues.max()!
-        let padding = 1.0
+        return createDomainFromValues(allVisibleValues, settings: settings, state: state, dataHash: dataHash)
+    }
+    
+    private static func extractAllValues(from visibleData: [ChartDataPoint]) -> [Double] {
+        let values = visibleData.map(\.value)
+        let smaValues = visibleData.compactMap(\.smaValue)
+        return values + smaValues
+    }
+    
+    private static func handleEmptyData(
+        settings: AppSettings,
+        state: ChartState,
+        dataHash: Int
+    ) -> ClosedRange<Double> {
+        if let currentStableDomain = state.stableYDomain {
+            return currentStableDomain
+        }
         
+        let minV = min(settings.baselineMin, settings.baselineMax) - 5
+        let maxV = max(settings.baselineMin, settings.baselineMax) + 5
+        let domain = minV...maxV
+        state.updateStableDomain(domain, dataHash: dataHash)
+        return domain
+    }
+    
+    private static func createDomainFromValues(
+        _ allVisibleValues: [Double],
+        settings: AppSettings,
+        state: ChartState,
+        dataHash: Int
+    ) -> ClosedRange<Double> {
+        guard let dataMin = allVisibleValues.min(),
+              let dataMax = allVisibleValues.max() else {
+            return handleEmptyData(settings: settings, state: state, dataHash: dataHash)
+        }
+        
+        let padding = 1.0
         let minV = min(dataMin - padding, settings.baselineMin - padding)
         let maxV = max(dataMax + padding, settings.baselineMax + padding)
         
         let domain = minV...maxV
-        state.updateStableDomain(domain, dataHash: visibleDataHash)
-        
+        state.updateStableDomain(domain, dataHash: dataHash)
         return domain
     }
     
@@ -67,41 +110,67 @@ struct ChartConfiguration {
     ) -> [ChartDataPoint] {
         guard !chartData.isEmpty else { return [] }
         
-        let visibleDays: Double = {
-            switch settings.chartPeriod {
-            case "1M": return 30
-            case "3M": return 90
-            case "6M": return 180
-            case "1Y": return 365
-            case "All": return 90
-            default: return 90
-            }
-        }()
+        let dateRange = calculateVisibleDateRange(for: settings.chartPeriod, scrollPosition: scrollPosition)
+        print("visible date Range \(dateRange), scrollPosition: \(scrollPosition)")
+        let visiblePoints = filterPointsInRange(chartData, dateRange: dateRange)
         
+        guard visiblePoints.isEmpty else { return visiblePoints }
+        
+        return findNearestPoint(in: chartData, to: scrollPosition)
+    }
+    
+    private static func calculateVisibleDateRange(
+        for chartPeriod: String,
+        scrollPosition: Date
+    ) -> (start: Date, end: Date) {
+        let visibleDays = getVisibleDaysForPeriod(chartPeriod)
         let visibleWidth = visibleDays * 86400
         let halfWidth = visibleWidth / 2
-        let visibleStartDate = scrollPosition.addingTimeInterval(-halfWidth)
-        let visibleEndDate = scrollPosition.addingTimeInterval(halfWidth)
         
-        let visiblePoints = chartData.filter { point in
-            point.date >= visibleStartDate && point.date <= visibleEndDate
+        let startDate = scrollPosition.addingTimeInterval(-halfWidth)
+        let endDate = scrollPosition.addingTimeInterval(halfWidth)
+        
+        return (start: startDate, end: endDate)
+    }
+    
+    private static func getVisibleDaysForPeriod(_ chartPeriod: String) -> Double {
+        switch chartPeriod {
+        case "1M": return 30
+        case "3M": return 90
+        case "6M": return 180
+        case "1Y": return 365
+        case "All": return 90
+        default: return 90
+        }
+    }
+    
+    private static func filterPointsInRange(
+        _ chartData: [ChartDataPoint],
+        dateRange: (start: Date, end: Date)
+    ) -> [ChartDataPoint] {
+        return chartData.filter { point in
+            point.date >= dateRange.start && point.date <= dateRange.end
+        }
+    }
+    
+    private static func findNearestPoint(
+        in chartData: [ChartDataPoint],
+        to scrollPosition: Date
+    ) -> [ChartDataPoint] {
+        guard let nearestPoint = chartData.min(by: { 
+            abs($0.date.timeIntervalSince(scrollPosition)) < abs($1.date.timeIntervalSince(scrollPosition)) 
+        }) else {
+            return []
         }
         
-        if visiblePoints.isEmpty {
-            let nearestPoint = chartData.min { 
-                abs($0.date.timeIntervalSince(scrollPosition)) < abs($1.date.timeIntervalSince(scrollPosition)) 
-            }
-            return nearestPoint.map { [$0] } ?? []
-        }
-        
-        return visiblePoints
+        return [nearestPoint]
     }
     
     // MARK: - Chart Styling
     
     static func baselineColor(for value: Double, settings: AppSettings) -> Color {
-        if value < settings.baselineMin { return .red }
-        if value > settings.baselineMax { return .green }
+        guard value >= settings.baselineMin else { return .red }
+        guard value <= settings.baselineMax else { return .green }
         return .gray
     }
     
